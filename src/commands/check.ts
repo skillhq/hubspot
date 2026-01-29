@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { isConfigured } from '../config.js';
 import { getPortalInfo } from '../client.js';
-import ora from 'ora';
+import { createSpinner, failSpinner, succeedSpinner } from '../formatters/index.js';
 import chalk from 'chalk';
 
 export const checkCommand = new Command('check')
@@ -12,16 +12,16 @@ export const checkCommand = new Command('check')
       process.exit(1);
     }
 
-    const spinner = ora('Checking HubSpot connection...').start();
+    const spinner = createSpinner('Checking HubSpot connection...', {});
 
     try {
       const info = await getPortalInfo();
-      spinner.succeed('Connection successful!');
+      succeedSpinner(spinner, 'Connection successful!');
       console.log(`  Portal ID: ${chalk.cyan(info.portalId)}`);
       console.log(`  Timezone:  ${info.timeZone}`);
       console.log(`  Currency:  ${info.currency}`);
     } catch (error) {
-      spinner.fail('Connection failed');
+      failSpinner(spinner, 'Connection failed');
       if (error instanceof Error) {
         if (error.message.includes('401')) {
           console.error('Invalid or expired access token. Run "hs auth" to reconfigure.');

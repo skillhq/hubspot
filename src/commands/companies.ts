@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getCompanies, getCompany, searchCompanies } from '../client.js';
-import { formatJson, formatCompanies, formatCompany, formatCompaniesMarkdown, formatCompanyMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatCompanies, formatCompany, formatCompaniesMarkdown, formatCompanyMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner } from '../formatters/index.js';
 
 export const companiesCommand = new Command('companies')
   .description('List companies')
@@ -11,7 +10,7 @@ export const companiesCommand = new Command('companies')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching companies...').start();
+    const spinner = createSpinner('Fetching companies...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
@@ -21,7 +20,7 @@ export const companiesCommand = new Command('companies')
         properties,
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -36,11 +35,12 @@ export const companiesCommand = new Command('companies')
           console.log(formatCompanies(result.results));
       }
 
-      if (result.paging?.next?.after) {
+      // Only show pagination hint for non-JSON output (JSON includes paging in response)
+      if (result.paging?.next?.after && format !== 'json') {
         console.log(`\nNext page: --after ${result.paging.next.after}`);
       }
     } catch (error) {
-      spinner.fail('Failed to fetch companies');
+      failSpinner(spinner, 'Failed to fetch companies');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -53,13 +53,13 @@ export const companyCommand = new Command('company')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (id, options) => {
-    const spinner = ora('Fetching company...').start();
+    const spinner = createSpinner('Fetching company...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
       const company = await getCompany(id, properties);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -74,7 +74,7 @@ export const companyCommand = new Command('company')
           console.log(formatCompany(company));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch company');
+      failSpinner(spinner, 'Failed to fetch company');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -87,14 +87,14 @@ export const companySearchCommand = new Command('company-search')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (query, options) => {
-    const spinner = ora('Searching companies...').start();
+    const spinner = createSpinner('Searching companies...', options);
 
     try {
       const result = await searchCompanies(query, {
         limit: parseInt(options.limit),
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -109,7 +109,7 @@ export const companySearchCommand = new Command('company-search')
           console.log(formatCompanies(result.results));
       }
     } catch (error) {
-      spinner.fail('Failed to search companies');
+      failSpinner(spinner, 'Failed to search companies');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

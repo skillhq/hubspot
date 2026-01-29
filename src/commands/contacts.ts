@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getContacts, getContact, searchContacts, createContact, updateContact } from '../client.js';
-import { formatJson, formatContacts, formatContact, formatContactsMarkdown, formatContactMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatContacts, formatContact, formatContactsMarkdown, formatContactMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner, succeedSpinner } from '../formatters/index.js';
 
 export const contactsCommand = new Command('contacts')
   .description('List contacts')
@@ -11,7 +10,7 @@ export const contactsCommand = new Command('contacts')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching contacts...').start();
+    const spinner = createSpinner('Fetching contacts...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
@@ -21,7 +20,7 @@ export const contactsCommand = new Command('contacts')
         properties,
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -36,11 +35,12 @@ export const contactsCommand = new Command('contacts')
           console.log(formatContacts(result.results));
       }
 
-      if (result.paging?.next?.after) {
+      // Only show pagination hint for non-JSON output (JSON includes paging in response)
+      if (result.paging?.next?.after && format !== 'json') {
         console.log(`\nNext page: --after ${result.paging.next.after}`);
       }
     } catch (error) {
-      spinner.fail('Failed to fetch contacts');
+      failSpinner(spinner, 'Failed to fetch contacts');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -53,13 +53,13 @@ export const contactCommand = new Command('contact')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (id, options) => {
-    const spinner = ora('Fetching contact...').start();
+    const spinner = createSpinner('Fetching contact...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
       const contact = await getContact(id, properties);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -74,7 +74,7 @@ export const contactCommand = new Command('contact')
           console.log(formatContact(contact));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch contact');
+      failSpinner(spinner, 'Failed to fetch contact');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -87,14 +87,14 @@ export const contactSearchCommand = new Command('contact-search')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (query, options) => {
-    const spinner = ora('Searching contacts...').start();
+    const spinner = createSpinner('Searching contacts...', options);
 
     try {
       const result = await searchContacts(query, {
         limit: parseInt(options.limit),
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -109,7 +109,7 @@ export const contactSearchCommand = new Command('contact-search')
           console.log(formatContacts(result.results));
       }
     } catch (error) {
-      spinner.fail('Failed to search contacts');
+      failSpinner(spinner, 'Failed to search contacts');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -140,12 +140,12 @@ export const contactCreateCommand = new Command('contact-create')
       process.exit(1);
     }
 
-    const spinner = ora('Creating contact...').start();
+    const spinner = createSpinner('Creating contact...', options);
 
     try {
       const contact = await createContact(properties);
 
-      spinner.succeed('Contact created!');
+      succeedSpinner(spinner, 'Contact created!');
 
       const format = getOutputFormat(options);
 
@@ -160,7 +160,7 @@ export const contactCreateCommand = new Command('contact-create')
           console.log(formatContact(contact));
       }
     } catch (error) {
-      spinner.fail('Failed to create contact');
+      failSpinner(spinner, 'Failed to create contact');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -192,12 +192,12 @@ export const contactUpdateCommand = new Command('contact-update')
       process.exit(1);
     }
 
-    const spinner = ora('Updating contact...').start();
+    const spinner = createSpinner('Updating contact...', options);
 
     try {
       const contact = await updateContact(id, properties);
 
-      spinner.succeed('Contact updated!');
+      succeedSpinner(spinner, 'Contact updated!');
 
       const format = getOutputFormat(options);
 
@@ -212,7 +212,7 @@ export const contactUpdateCommand = new Command('contact-update')
           console.log(formatContact(contact));
       }
     } catch (error) {
-      spinner.fail('Failed to update contact');
+      failSpinner(spinner, 'Failed to update contact');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

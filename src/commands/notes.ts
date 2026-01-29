@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getNotes, createNote } from '../client.js';
-import { formatJson, formatNotes, formatNotesMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatNotes, formatNotesMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner, succeedSpinner } from '../formatters/index.js';
 
 export const notesCommand = new Command('notes')
   .description('List notes for an object')
@@ -11,14 +10,14 @@ export const notesCommand = new Command('notes')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (objectType, id, options) => {
-    const spinner = ora('Fetching notes...').start();
+    const spinner = createSpinner('Fetching notes...', options);
 
     try {
       const result = await getNotes(objectType, id, {
         limit: parseInt(options.limit),
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -33,7 +32,7 @@ export const notesCommand = new Command('notes')
           console.log(formatNotes(result.results));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch notes');
+      failSpinner(spinner, 'Failed to fetch notes');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -46,12 +45,12 @@ export const noteCreateCommand = new Command('note-create')
   .argument('<body>', 'Note body')
   .option('--json', 'Output as JSON')
   .action(async (objectType, id, body, options) => {
-    const spinner = ora('Creating note...').start();
+    const spinner = createSpinner('Creating note...', options);
 
     try {
       const note = await createNote(objectType, id, body);
 
-      spinner.succeed('Note created!');
+      succeedSpinner(spinner, 'Note created!');
 
       if (options.json) {
         console.log(formatJson(note));
@@ -59,7 +58,7 @@ export const noteCreateCommand = new Command('note-create')
         console.log(`Note ID: ${note.id}`);
       }
     } catch (error) {
-      spinner.fail('Failed to create note');
+      failSpinner(spinner, 'Failed to create note');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

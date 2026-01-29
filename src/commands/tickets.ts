@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getTickets, getTicket, searchTickets } from '../client.js';
-import { formatJson, formatTickets, formatTicket, formatTicketsMarkdown, formatTicketMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatTickets, formatTicket, formatTicketsMarkdown, formatTicketMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner } from '../formatters/index.js';
 
 export const ticketsCommand = new Command('tickets')
   .description('List tickets')
@@ -11,7 +10,7 @@ export const ticketsCommand = new Command('tickets')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching tickets...').start();
+    const spinner = createSpinner('Fetching tickets...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
@@ -21,7 +20,7 @@ export const ticketsCommand = new Command('tickets')
         properties,
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -36,11 +35,12 @@ export const ticketsCommand = new Command('tickets')
           console.log(formatTickets(result.results));
       }
 
-      if (result.paging?.next?.after) {
+      // Only show pagination hint for non-JSON output (JSON includes paging in response)
+      if (result.paging?.next?.after && format !== 'json') {
         console.log(`\nNext page: --after ${result.paging.next.after}`);
       }
     } catch (error) {
-      spinner.fail('Failed to fetch tickets');
+      failSpinner(spinner, 'Failed to fetch tickets');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -53,13 +53,13 @@ export const ticketCommand = new Command('ticket')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (id, options) => {
-    const spinner = ora('Fetching ticket...').start();
+    const spinner = createSpinner('Fetching ticket...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
       const ticket = await getTicket(id, properties);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -74,7 +74,7 @@ export const ticketCommand = new Command('ticket')
           console.log(formatTicket(ticket));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch ticket');
+      failSpinner(spinner, 'Failed to fetch ticket');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -87,14 +87,14 @@ export const ticketSearchCommand = new Command('ticket-search')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (query, options) => {
-    const spinner = ora('Searching tickets...').start();
+    const spinner = createSpinner('Searching tickets...', options);
 
     try {
       const result = await searchTickets(query, {
         limit: parseInt(options.limit),
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -109,7 +109,7 @@ export const ticketSearchCommand = new Command('ticket-search')
           console.log(formatTickets(result.results));
       }
     } catch (error) {
-      spinner.fail('Failed to search tickets');
+      failSpinner(spinner, 'Failed to search tickets');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getAssociations, createAssociation } from '../client.js';
-import { formatJson, formatAssociations, formatAssociationsMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatAssociations, formatAssociationsMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner, succeedSpinner } from '../formatters/index.js';
 
 export const associationsCommand = new Command('associations')
   .description('List associations for an object')
@@ -11,12 +10,12 @@ export const associationsCommand = new Command('associations')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (fromType, id, toType, options) => {
-    const spinner = ora('Fetching associations...').start();
+    const spinner = createSpinner('Fetching associations...', options);
 
     try {
       const associations = await getAssociations(fromType, id, toType);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -31,7 +30,7 @@ export const associationsCommand = new Command('associations')
           console.log(formatAssociations(associations));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch associations');
+      failSpinner(spinner, 'Failed to fetch associations');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -43,16 +42,17 @@ export const associateCommand = new Command('associate')
   .argument('<fromId>', 'From object ID')
   .argument('<toType>', 'To object type (contacts, companies, deals, tickets)')
   .argument('<toId>', 'To object ID')
-  .action(async (fromType, fromId, toType, toId) => {
-    const spinner = ora('Creating association...').start();
+  .option('--json', 'Output as JSON')
+  .action(async (fromType, fromId, toType, toId, options) => {
+    const spinner = createSpinner('Creating association...', options);
 
     try {
       await createAssociation(fromType, fromId, toType, toId);
 
-      spinner.succeed('Association created!');
+      succeedSpinner(spinner, 'Association created!');
       console.log(`${fromType}/${fromId} -> ${toType}/${toId}`);
     } catch (error) {
-      spinner.fail('Failed to create association');
+      failSpinner(spinner, 'Failed to create association');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

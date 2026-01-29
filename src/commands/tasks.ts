@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getTasks, getTask, createTask } from '../client.js';
-import { formatJson, formatTasks, formatTask, formatTasksMarkdown, formatTaskMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatTasks, formatTask, formatTasksMarkdown, formatTaskMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner, succeedSpinner } from '../formatters/index.js';
 
 export const tasksCommand = new Command('tasks')
   .description('List tasks')
@@ -10,7 +9,7 @@ export const tasksCommand = new Command('tasks')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching tasks...').start();
+    const spinner = createSpinner('Fetching tasks...', options);
 
     try {
       const result = await getTasks({
@@ -18,7 +17,7 @@ export const tasksCommand = new Command('tasks')
         after: options.after,
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -33,11 +32,12 @@ export const tasksCommand = new Command('tasks')
           console.log(formatTasks(result.results));
       }
 
-      if (result.paging?.next?.after) {
+      // Only show pagination hint for non-JSON output (JSON includes paging in response)
+      if (result.paging?.next?.after && format !== 'json') {
         console.log(`\nNext page: --after ${result.paging.next.after}`);
       }
     } catch (error) {
-      spinner.fail('Failed to fetch tasks');
+      failSpinner(spinner, 'Failed to fetch tasks');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -49,12 +49,12 @@ export const taskCommand = new Command('task')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (id, options) => {
-    const spinner = ora('Fetching task...').start();
+    const spinner = createSpinner('Fetching task...', options);
 
     try {
       const task = await getTask(id);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -69,7 +69,7 @@ export const taskCommand = new Command('task')
           console.log(formatTask(task));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch task');
+      failSpinner(spinner, 'Failed to fetch task');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -90,7 +90,7 @@ export const taskCreateCommand = new Command('task-create')
       process.exit(1);
     }
 
-    const spinner = ora('Creating task...').start();
+    const spinner = createSpinner('Creating task...', options);
 
     try {
       const task = await createTask({
@@ -101,7 +101,7 @@ export const taskCreateCommand = new Command('task-create')
         status: options.status?.toUpperCase() as 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | undefined,
       });
 
-      spinner.succeed('Task created!');
+      succeedSpinner(spinner, 'Task created!');
 
       const format = getOutputFormat(options);
 
@@ -116,7 +116,7 @@ export const taskCreateCommand = new Command('task-create')
           console.log(formatTask(task));
       }
     } catch (error) {
-      spinner.fail('Failed to create task');
+      failSpinner(spinner, 'Failed to create task');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }

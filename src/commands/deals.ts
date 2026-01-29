@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import { getDeals, getDeal, searchDeals, filterDeals, getPipelines } from '../client.js';
-import { formatJson, formatDeals, formatDeal, formatDealsMarkdown, formatDealMarkdown, formatPipelines, formatPipelinesMarkdown, getOutputFormat } from '../formatters/index.js';
-import ora from 'ora';
+import { formatJson, formatDeals, formatDeal, formatDealsMarkdown, formatDealMarkdown, formatPipelines, formatPipelinesMarkdown, getOutputFormat, createSpinner, stopSpinner, failSpinner } from '../formatters/index.js';
 
 export const dealsCommand = new Command('deals')
   .description('List deals')
@@ -13,7 +12,7 @@ export const dealsCommand = new Command('deals')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching deals...').start();
+    const spinner = createSpinner('Fetching deals...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
@@ -33,7 +32,7 @@ export const dealsCommand = new Command('deals')
             properties,
           });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -48,11 +47,12 @@ export const dealsCommand = new Command('deals')
           console.log(formatDeals(result.results));
       }
 
-      if (result.paging?.next?.after) {
+      // Only show pagination hint for non-JSON output (JSON includes paging in response)
+      if (result.paging?.next?.after && format !== 'json') {
         console.log(`\nNext page: --after ${result.paging.next.after}`);
       }
     } catch (error) {
-      spinner.fail('Failed to fetch deals');
+      failSpinner(spinner, 'Failed to fetch deals');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -65,13 +65,13 @@ export const dealCommand = new Command('deal')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (id, options) => {
-    const spinner = ora('Fetching deal...').start();
+    const spinner = createSpinner('Fetching deal...', options);
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
       const deal = await getDeal(id, properties);
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -86,7 +86,7 @@ export const dealCommand = new Command('deal')
           console.log(formatDeal(deal));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch deal');
+      failSpinner(spinner, 'Failed to fetch deal');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -99,14 +99,14 @@ export const dealSearchCommand = new Command('deal-search')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (query, options) => {
-    const spinner = ora('Searching deals...').start();
+    const spinner = createSpinner('Searching deals...', options);
 
     try {
       const result = await searchDeals(query, {
         limit: parseInt(options.limit),
       });
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -121,7 +121,7 @@ export const dealSearchCommand = new Command('deal-search')
           console.log(formatDeals(result.results));
       }
     } catch (error) {
-      spinner.fail('Failed to search deals');
+      failSpinner(spinner, 'Failed to search deals');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -132,12 +132,12 @@ export const pipelinesCommand = new Command('pipelines')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
-    const spinner = ora('Fetching pipelines...').start();
+    const spinner = createSpinner('Fetching pipelines...', options);
 
     try {
       const pipelines = await getPipelines();
 
-      spinner.stop();
+      stopSpinner(spinner);
 
       const format = getOutputFormat(options);
 
@@ -152,7 +152,7 @@ export const pipelinesCommand = new Command('pipelines')
           console.log(formatPipelines(pipelines));
       }
     } catch (error) {
-      spinner.fail('Failed to fetch pipelines');
+      failSpinner(spinner, 'Failed to fetch pipelines');
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
