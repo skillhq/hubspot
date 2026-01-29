@@ -69,6 +69,8 @@ hs company-search "acme"             # Search companies
 ### Deals
 ```bash
 hs deals                             # List deals
+hs deals --pipeline <id>             # Filter by pipeline ID
+hs deals --stage <id>                # Filter by stage ID
 hs deal <id>                         # Get deal details
 hs deal-search "enterprise"          # Search deals
 hs pipelines                         # List pipelines and stages
@@ -100,13 +102,33 @@ hs associate contacts <id1> deals <id2>    # Create association
 
 All commands support:
 - Default: Colored terminal output
-- `--json`: JSON output for scripting
+- `--json`: JSON output for scripting (clean, pipeable to jq)
 - `--markdown`: Markdown table output
 
 ```bash
 hs contacts --json              # JSON format
 hs deals --markdown             # Markdown tables
 ```
+
+### JSON Output & Piping
+
+JSON output is clean and can be piped directly to `jq`:
+
+```bash
+# Get pipeline ID for first deal
+hs deals --json | jq '.results[0].pipeline'
+
+# Filter deals by pipeline and extract names
+hs deals --pipeline 831085590 --json | jq '.results[].dealname'
+
+# Get contact emails
+hs contacts --json | jq -r '.results[].email'
+
+# Count deals in a stage
+hs deals --pipeline 831085590 --stage 1231737429 --json | jq '.results | length'
+```
+
+Note: Pagination info is included in the JSON response as `.paging.next.after`.
 
 ## Pagination
 
