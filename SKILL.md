@@ -160,6 +160,22 @@ Create a task:
 hs task-create --subject "Schedule demo" --priority HIGH --due "2024-12-15"
 ```
 
+## Limitations
+
+- **Views not supported:** The CLI cannot filter by HubSpot saved view IDs from URLs
+- When given a view URL like `/views/57091019/`, you must manually identify which pipeline the view filters and use `--pipeline <id>` instead
+- Use `hs pipelines` to list all pipelines and their IDs
+
+## View URL Workaround
+
+If given a HubSpot view URL like `https://app.hubspot.com/contacts/.../views/57091019/list`:
+
+1. Ask the user which pipeline it filters
+2. Open the view in browser to identify the pipeline
+3. Use `hs pipelines` and match by name
+
+The view ID in the URL is **not** a pipeline ID - they are different concepts in HubSpot.
+
 ## Notes
 
 - IDs are HubSpot object IDs (numeric strings)
