@@ -1,6 +1,6 @@
 {
   "name": "@cyberdrk/hs",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "HubSpot CRM CLI for managing contacts, companies, deals, and engagements",
   "type": "module",
   "main": "dist/index.js",
