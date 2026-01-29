@@ -7,6 +7,7 @@ export const dealsCommand = new Command('deals')
   .option('-n, --limit <number>', 'Maximum number of deals', '20')
   .option('--after <cursor>', 'Pagination cursor')
   .option('--pipeline <id>', 'Filter by pipeline ID')
+  .option('--pipeline-name <name>', 'Filter by pipeline name (case-insensitive, partial match)')
   .option('--stage <id>', 'Filter by stage ID')
   .option('--properties <props>', 'Comma-separated properties to fetch')
   .option('--json', 'Output as JSON')
@@ -17,13 +18,45 @@ export const dealsCommand = new Command('deals')
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
 
+      // Resolve pipeline name to ID if provided
+      let pipelineId = options.pipeline;
+      if (options.pipelineName) {
+        const pipelines = await getPipelines();
+        const searchTerm = options.pipelineName.toLowerCase();
+        const matches = pipelines.filter(p =>
+          p.label.toLowerCase().includes(searchTerm)
+        );
+
+        if (matches.length === 0) {
+          stopSpinner(spinner);
+          console.error(`No pipeline found matching "${options.pipelineName}"`);
+          console.error('\nAvailable pipelines:');
+          pipelines.forEach(p => console.error(`  ${p.id}: ${p.label}`));
+          process.exit(1);
+        }
+
+        if (matches.length > 1) {
+          stopSpinner(spinner);
+          console.error(`Multiple pipelines match "${options.pipelineName}":`);
+          matches.forEach(p => console.error(`  ${p.id}: ${p.label}`));
+          console.error('\nUse --pipeline <id> to specify exactly.');
+          process.exit(1);
+        }
+
+        pipelineId = matches[0].id;
+        if (!options.json) {
+          // Show which pipeline was matched (stderr so it doesn't break JSON piping)
+          process.stderr.write(`Using pipeline: ${matches[0].label} (${pipelineId})\n`);
+        }
+      }
+
       // Use filterDeals if pipeline or stage filter is specified
-      const result = (options.pipeline || options.stage)
+      const result = (pipelineId || options.stage)
         ? await filterDeals({
             limit: parseInt(options.limit),
             after: options.after,
             properties,
-            pipeline: options.pipeline,
+            pipeline: pipelineId,
             stage: options.stage,
           })
         : await getDeals({
@@ -129,13 +162,29 @@ export const dealSearchCommand = new Command('deal-search')
 
 export const pipelinesCommand = new Command('pipelines')
   .description('List deal pipelines and stages')
+  .option('-s, --search <term>', 'Search pipelines by name (case-insensitive)')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
   .action(async (options) => {
     const spinner = createSpinner('Fetching pipelines...', options);
 
     try {
-      const pipelines = await getPipelines();
+      let pipelines = await getPipelines();
+
+      // Filter by search term if provided
+      if (options.search) {
+        const searchTerm = options.search.toLowerCase();
+        pipelines = pipelines.filter(p =>
+          p.label.toLowerCase().includes(searchTerm) ||
+          p.stages.some(s => s.label.toLowerCase().includes(searchTerm))
+        );
+
+        if (pipelines.length === 0) {
+          stopSpinner(spinner);
+          console.error(`No pipelines found matching "${options.search}"`);
+          process.exit(1);
+        }
+      }
 
       stopSpinner(spinner);
 

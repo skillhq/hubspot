@@ -70,10 +70,12 @@ hs company-search "acme"             # Search companies
 ```bash
 hs deals                             # List deals
 hs deals --pipeline <id>             # Filter by pipeline ID
+hs deals --pipeline-name "WCP"       # Filter by pipeline name (fuzzy match)
 hs deals --stage <id>                # Filter by stage ID
 hs deal <id>                         # Get deal details
 hs deal-search "enterprise"          # Search deals
 hs pipelines                         # List pipelines and stages
+hs pipelines --search "wallet"       # Search pipelines by name
 ```
 
 ### Tickets
