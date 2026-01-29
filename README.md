@@ -21,9 +21,16 @@ npm link
 
 The CLI supports two authentication methods:
 
+| | OAuth 2.0 | Private App Token |
+|---|---|---|
+| **Best for** | Teams | Personal use |
+| **Data access** | User's permissions apply | Portal-wide access |
+| **Setup** | One-time app creation, then each user logs in | Single token for one user |
+| **Token management** | Auto-refreshes | Never expires |
+
 ### Option 1: OAuth 2.0 (Recommended for Teams)
 
-OAuth lets multiple team members authenticate with their own HubSpot accounts using a shared app.
+OAuth lets multiple team members authenticate with their own HubSpot accounts using a shared app. **Each user can only access data they have permission to see in the HubSpot UI** - their individual role and permissions apply.
 
 **First-time setup (one person creates the app):**
 
@@ -60,7 +67,7 @@ hubspot auth logout   # Clear credentials
 
 ### Option 2: Private App Token (Simple, Single User)
 
-For personal use or quick setup:
+For personal use or quick setup. **Note:** Private App Tokens have portal-wide access - they can see all data the scopes allow, regardless of individual user permissions.
 
 1. In HubSpot, go to **Settings > Integrations > Private Apps**
 2. Create a new Private App with required scopes (see below)
