@@ -20,12 +20,7 @@ Use this skill when the user:
 ## Install
 
 ```bash
-npm install -g @cyberdrk/hs
-```
-
-Or from source:
-```bash
-cd ~/Code/cyberdrk305/hubspot && npm install && npm run build && npm link
+npm install -g @skillhq/hubspot
 ```
 
 ## Authentication
@@ -34,70 +29,70 @@ First-time setup requires a Private App access token from HubSpot:
 
 1. Go to HubSpot Settings > Integrations > Private Apps (under "Legacy Apps")
 2. Create a new Private App with required scopes
-3. Run `hs auth` and paste the access token (starts with `pat-`)
+3. Run `hubspot auth` and paste the access token (starts with `pat-`)
 
 ```bash
-hs auth
+hubspot auth
 ```
 
 ## Commands
 
 ### Auth & Status
 ```bash
-hs auth                    # Configure access token
-hs check                   # Verify authentication
-hs whoami                  # Show portal info
+hubspot auth                    # Configure access token
+hubspot check                   # Verify authentication
+hubspot whoami                  # Show portal info
 ```
 
 ### Contacts
 ```bash
-hs contacts                          # List contacts
-hs contacts -n 50                    # List 50 contacts
-hs contact <id>                      # Get contact details
-hs contact-search "john"             # Search contacts
-hs contact-create --email x@y.com --firstname John
-hs contact-update <id> --phone "555-1234"
+hubspot contacts                          # List contacts
+hubspot contacts -n 50                    # List 50 contacts
+hubspot contact <id>                      # Get contact details
+hubspot contact-search "john"             # Search contacts
+hubspot contact-create --email x@y.com --firstname John
+hubspot contact-update <id> --phone "555-1234"
 ```
 
 ### Companies
 ```bash
-hs companies                         # List companies
-hs company <id>                      # Get company details
-hs company-search "acme"             # Search companies
+hubspot companies                         # List companies
+hubspot company <id>                      # Get company details
+hubspot company-search "acme"             # Search companies
 ```
 
 ### Deals
 ```bash
-hs deals                             # List deals
-hs deals --pipeline <id>             # Filter by pipeline ID
-hs deals --pipeline-name "WCP"       # Filter by pipeline name (fuzzy match)
-hs deals --stage <id>                # Filter by stage ID
-hs deal <id>                         # Get deal details
-hs deal-search "enterprise"          # Search deals
-hs pipelines                         # List pipelines and stages
-hs pipelines --search "wallet"       # Search pipelines by name
+hubspot deals                             # List deals
+hubspot deals --pipeline <id>             # Filter by pipeline ID
+hubspot deals --pipeline-name "WCP"       # Filter by pipeline name (fuzzy match)
+hubspot deals --stage <id>                # Filter by stage ID
+hubspot deal <id>                         # Get deal details
+hubspot deal-search "enterprise"          # Search deals
+hubspot pipelines                         # List pipelines and stages
+hubspot pipelines --search "wallet"       # Search pipelines by name
 ```
 
 ### Tickets
 ```bash
-hs tickets                           # List tickets
-hs ticket <id>                       # Get ticket details
-hs ticket-search "issue"             # Search tickets
+hubspot tickets                           # List tickets
+hubspot ticket <id>                       # Get ticket details
+hubspot ticket-search "issue"             # Search tickets
 ```
 
 ### Notes & Tasks
 ```bash
-hs notes contacts <id>               # List notes for contact
-hs note-create contacts <id> "Note text"
-hs tasks                             # List tasks
-hs task <id>                         # Get task details
-hs task-create --subject "Follow up" --due "2024-12-31" --priority HIGH
+hubspot notes contacts <id>               # List notes for contact
+hubspot note-create contacts <id> "Note text"
+hubspot tasks                             # List tasks
+hubspot task <id>                         # Get task details
+hubspot task-create --subject "Follow up" --due "2024-12-31" --priority HIGH
 ```
 
 ### Associations
 ```bash
-hs associations contacts <id> companies    # List company associations
-hs associate contacts <id1> deals <id2>    # Create association
+hubspot associations contacts <id> companies    # List company associations
+hubspot associate contacts <id1> deals <id2>    # Create association
 ```
 
 ## Output Formats
@@ -108,8 +103,8 @@ All commands support:
 - `--markdown`: Markdown table output
 
 ```bash
-hs contacts --json              # JSON format
-hs deals --markdown             # Markdown tables
+hubspot contacts --json              # JSON format
+hubspot deals --markdown             # Markdown tables
 ```
 
 ### JSON Output & Piping
@@ -118,16 +113,16 @@ JSON output is clean and can be piped directly to `jq`:
 
 ```bash
 # Get pipeline ID for first deal
-hs deals --json | jq '.results[0].pipeline'
+hubspot deals --json | jq '.results[0].pipeline'
 
 # Filter deals by pipeline and extract names
-hs deals --pipeline 831085590 --json | jq '.results[].dealname'
+hubspot deals --pipeline 831085590 --json | jq '.results[].dealname'
 
 # Get contact emails
-hs contacts --json | jq -r '.results[].email'
+hubspot contacts --json | jq -r '.results[].email'
 
 # Count deals in a stage
-hs deals --pipeline 831085590 --stage 1231737429 --json | jq '.results | length'
+hubspot deals --pipeline 831085590 --stage 1231737429 --json | jq '.results | length'
 ```
 
 Note: Pagination info is included in the JSON response as `.paging.next.after`.
@@ -136,37 +131,37 @@ Note: Pagination info is included in the JSON response as `.paging.next.after`.
 
 List commands support pagination:
 ```bash
-hs contacts -n 50               # Limit to 50 results
-hs contacts --after <cursor>    # Next page using cursor
+hubspot contacts -n 50               # Limit to 50 results
+hubspot contacts --after <cursor>    # Next page using cursor
 ```
 
 ## Examples
 
 Check authentication:
 ```bash
-hs check
+hubspot check
 ```
 
 Search for a contact:
 ```bash
-hs contact-search "john@example.com"
+hubspot contact-search "john@example.com"
 ```
 
 View deal pipeline stages:
 ```bash
-hs pipelines
+hubspot pipelines
 ```
 
 Create a task:
 ```bash
-hs task-create --subject "Schedule demo" --priority HIGH --due "2024-12-15"
+hubspot task-create --subject "Schedule demo" --priority HIGH --due "2024-12-15"
 ```
 
 ## Limitations
 
 - **Views not supported:** The CLI cannot filter by HubSpot saved view IDs from URLs
 - When given a view URL like `/views/57091019/`, you must manually identify which pipeline the view filters and use `--pipeline <id>` instead
-- Use `hs pipelines` to list all pipelines and their IDs
+- Use `hubspot pipelines` to list all pipelines and their IDs
 
 ## View URL Workaround
 
@@ -174,7 +169,7 @@ If given a HubSpot view URL like `https://app.hubspot.com/contacts/.../views/570
 
 1. Ask the user which pipeline it filters
 2. Open the view in browser to identify the pipeline
-3. Use `hs pipelines` and match by name
+3. Use `hubspot pipelines` and match by name
 
 The view ID in the URL is **not** a pipeline ID - they are different concepts in HubSpot.
 
