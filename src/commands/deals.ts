@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { getDeals, getDeal, searchDeals, getPipelines } from '../client.js';
+import { getDeals, getDeal, searchDeals, filterDeals, getPipelines } from '../client.js';
 import { formatJson, formatDeals, formatDeal, formatDealsMarkdown, formatDealMarkdown, formatPipelines, formatPipelinesMarkdown, getOutputFormat } from '../formatters/index.js';
 import ora from 'ora';
 
@@ -7,6 +7,8 @@ export const dealsCommand = new Command('deals')
   .description('List deals')
   .option('-n, --limit <number>', 'Maximum number of deals', '20')
   .option('--after <cursor>', 'Pagination cursor')
+  .option('--pipeline <id>', 'Filter by pipeline ID')
+  .option('--stage <id>', 'Filter by stage ID')
   .option('--properties <props>', 'Comma-separated properties to fetch')
   .option('--json', 'Output as JSON')
   .option('--markdown', 'Output as Markdown')
@@ -15,11 +17,21 @@ export const dealsCommand = new Command('deals')
 
     try {
       const properties = options.properties?.split(',').map((p: string) => p.trim());
-      const result = await getDeals({
-        limit: parseInt(options.limit),
-        after: options.after,
-        properties,
-      });
+
+      // Use filterDeals if pipeline or stage filter is specified
+      const result = (options.pipeline || options.stage)
+        ? await filterDeals({
+            limit: parseInt(options.limit),
+            after: options.after,
+            properties,
+            pipeline: options.pipeline,
+            stage: options.stage,
+          })
+        : await getDeals({
+            limit: parseInt(options.limit),
+            after: options.after,
+            properties,
+          });
 
       spinner.stop();
 

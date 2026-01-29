@@ -1,5 +1,6 @@
 import { Client } from '@hubspot/api-client';
 import { AssociationSpecAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/associations/v4/models/AssociationSpec.js';
+import { FilterOperatorEnum } from '@hubspot/api-client/lib/codegen/crm/deals/models/Filter.js';
 import { getAccessToken, isConfigured, setPortalId } from './config.js';
 import type {
   Contact,
@@ -282,13 +283,55 @@ export async function getDeal(id: string, properties?: string[]): Promise<Deal> 
 
 export async function searchDeals(query: string, options: SearchOptions = {}): Promise<PaginatedResult<Deal>> {
   const client = getClient();
-  const { limit = 20, after, properties = ['dealname', 'amount', 'dealstage', 'pipeline', 'closedate'] } = options;
+  const { limit = 20, after, properties = ['dealname', 'amount', 'dealstage', 'pipeline', 'closedate'], filters } = options;
+
+  // Build filter groups if filters are provided
+  const filterGroups = filters?.length
+    ? [{ filters: filters.map(f => ({ propertyName: f.propertyName, operator: f.operator as FilterOperatorEnum, value: f.value })) }]
+    : undefined;
 
   const response = await client.crm.deals.searchApi.doSearch({
     query,
     limit,
     after,
     properties,
+    filterGroups,
+  });
+
+  return {
+    results: response.results.map(r => ({
+      id: r.id,
+      dealname: r.properties.dealname ?? undefined,
+      amount: r.properties.amount ?? undefined,
+      dealstage: r.properties.dealstage ?? undefined,
+      pipeline: r.properties.pipeline ?? undefined,
+      closedate: r.properties.closedate ?? undefined,
+      properties: r.properties,
+    })),
+    paging: response.paging,
+  };
+}
+
+export async function filterDeals(options: SearchOptions & { pipeline?: string; stage?: string } = {}): Promise<PaginatedResult<Deal>> {
+  const client = getClient();
+  const { limit = 20, after, properties = ['dealname', 'amount', 'dealstage', 'pipeline', 'closedate'], pipeline, stage } = options;
+
+  // Build filters for pipeline and/or stage
+  const filters: Array<{ propertyName: string; operator: FilterOperatorEnum; value: string }> = [];
+  if (pipeline) {
+    filters.push({ propertyName: 'pipeline', operator: FilterOperatorEnum.Eq, value: pipeline });
+  }
+  if (stage) {
+    filters.push({ propertyName: 'dealstage', operator: FilterOperatorEnum.Eq, value: stage });
+  }
+
+  const filterGroups = filters.length > 0 ? [{ filters }] : undefined;
+
+  const response = await client.crm.deals.searchApi.doSearch({
+    limit,
+    after,
+    properties,
+    filterGroups,
   });
 
   return {
