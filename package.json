@@ -1,11 +1,11 @@
 {
-  "name": "@cyberdrk/hs",
-  "version": "0.2.0",
+  "name": "@skillhq/hubspot",
+  "version": "0.3.0",
   "description": "HubSpot CRM CLI for managing contacts, companies, deals, and engagements",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "hs": "dist/index.js"
+    "hubspot": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -24,11 +24,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cyberdrk305/hubspot.git"
+    "url": "git+https://github.com/skillhq/hubspot.git"
   },
-  "homepage": "https://github.com/cyberdrk305/hubspot#readme",
+  "homepage": "https://github.com/skillhq/hubspot#readme",
   "bugs": {
-    "url": "https://github.com/cyberdrk305/hubspot/issues"
+    "url": "https://github.com/skillhq/hubspot/issues"
   },
   "dependencies": {
     "@hubspot/api-client": "^13.4.0",
