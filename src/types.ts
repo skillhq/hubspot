@@ -146,3 +146,19 @@ export interface PaginatedResult<T> {
     };
   };
 }
+
+// OAuth Types
+export type AuthMethod = 'token' | 'oauth';
+
+export interface OAuthCredentials {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;  // Unix timestamp (ms)
+  tokenType: string;
+  scopes: string[];
+}
+
+export interface OAuthAppConfig {
+  clientId: string;
+  clientSecret: string;
+}

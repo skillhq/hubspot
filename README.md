@@ -5,100 +5,145 @@ A fast, focused CLI for HubSpot CRM operations.
 ## Installation
 
 ```bash
-npm install -g @cyberdrk/hs
+npm install -g @skillhq/hubspot
 ```
 
 Or from source:
 ```bash
-git clone https://github.com/cyberdrk305/hubspot.git
+git clone https://github.com/skillhq/hubspot.git
 cd hubspot
 npm install
 npm run build
 npm link
 ```
 
-## Quick Start
+## Authentication
 
-1. Create a Private App in HubSpot:
-   - Go to Settings > Integrations > Private Apps (under "Legacy Apps")
-   - Create app with required scopes (see below)
-   - Copy the access token (starts with `pat-`)
+The CLI supports two authentication methods:
 
-2. Configure the CLI:
+### Option 1: OAuth 2.0 (Recommended for Teams)
+
+OAuth lets multiple team members authenticate with their own HubSpot accounts using a shared app.
+
+**First-time setup (one person creates the app):**
+
+1. Go to your [HubSpot Developer Portal](https://app.hubspot.com/developer-overview/)
+2. Click **Development** in the left sidebar, then **Legacy Apps**
+3. Click **Create app** and give it a name (e.g., "Team CLI")
+4. Go to the **Auth** tab:
+   - Copy the **Client ID** and **Client Secret**
+   - Under **Redirect URLs**, add: `http://localhost:3847/callback`
+   - Under **Scopes**, add all required scopes (see below)
+5. Share the Client ID and Client Secret with your team (via secure channel)
+
+**For each team member:**
+
+```bash
+# Set credentials (one-time)
+export HUBSPOT_CLIENT_ID=your-client-id
+export HUBSPOT_CLIENT_SECRET=your-client-secret
+
+# Login (opens browser for HubSpot authorization)
+hubspot auth login
+```
+
+Or pass credentials directly:
+```bash
+hubspot auth login --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET
+```
+
+**Managing OAuth sessions:**
+```bash
+hubspot auth status   # Check token expiry
+hubspot auth logout   # Clear credentials
+```
+
+### Option 2: Private App Token (Simple, Single User)
+
+For personal use or quick setup:
+
+1. In HubSpot, go to **Settings > Integrations > Private Apps**
+2. Create a new Private App with required scopes (see below)
+3. Copy the access token (starts with `pat-`)
+4. Configure the CLI:
    ```bash
-   hs auth
-   ```
-
-3. Verify connection:
-   ```bash
-   hs check
+   hubspot auth -t pat-your-token-here
+   # Or run `hubspot auth` and paste when prompted
    ```
 
 ## Required Scopes
 
-When creating your Private App, grant these scopes:
+Add these scopes to your OAuth app or Private App:
 
-**CRM:**
-- `crm.objects.contacts.read` / `crm.objects.contacts.write`
-- `crm.objects.companies.read` / `crm.objects.companies.write`
-- `crm.objects.deals.read` / `crm.objects.deals.write`
-- `crm.objects.owners.read`
-- `crm.schemas.contacts.read` (for custom properties)
-- `crm.schemas.companies.read`
-- `crm.schemas.deals.read`
+| Scope | Purpose |
+|-------|---------|
+| `crm.objects.contacts.read` | Read contacts |
+| `crm.objects.contacts.write` | Create/update contacts |
+| `crm.objects.companies.read` | Read companies |
+| `crm.objects.companies.write` | Create/update companies |
+| `crm.objects.deals.read` | Read deals |
+| `crm.objects.deals.write` | Create/update deals |
+| `crm.objects.owners.read` | List owners |
+| `crm.schemas.contacts.read` | Read contact properties |
+| `crm.schemas.contacts.write` | (OAuth only) Required for OAuth apps |
+| `crm.schemas.companies.read` | Read company properties |
+| `crm.schemas.deals.read` | Read deal properties |
+| `tickets` | Read/write tickets |
+| `oauth` | (OAuth only) Required for OAuth flow |
+| `account-info.security.read` | Read portal info |
 
-**Tickets:**
-- `tickets` (read/write)
+## Verify Connection
 
-**Settings:**
-- `account-info.security.read` (for portal info)
+```bash
+hubspot check
+```
 
 ## Usage
 
 ### Contacts
 ```bash
-hs contacts                              # List contacts
-hs contact <id>                          # Get contact
-hs contact-search "query"                # Search
-hs contact-create --email user@example.com --firstname John
-hs contact-update <id> --lastname Smith
+hubspot contacts                              # List contacts
+hubspot contact <id>                          # Get contact
+hubspot contact-search "query"                # Search
+hubspot contact-create --email user@example.com --firstname John
+hubspot contact-update <id> --lastname Smith
 ```
 
 ### Companies
 ```bash
-hs companies                             # List companies
-hs company <id>                          # Get company
-hs company-search "query"                # Search
+hubspot companies                             # List companies
+hubspot company <id>                          # Get company
+hubspot company-search "query"                # Search
 ```
 
 ### Deals
 ```bash
-hs deals                                 # List deals
-hs deal <id>                             # Get deal
-hs deal-search "query"                   # Search
-hs pipelines                             # List pipelines
+hubspot deals                                 # List deals
+hubspot deal <id>                             # Get deal
+hubspot deal-search "query"                   # Search
+hubspot pipelines                             # List pipelines
 ```
 
 ### Tickets
 ```bash
-hs tickets                               # List tickets
-hs ticket <id>                           # Get ticket
-hs ticket-search "query"                 # Search
+hubspot tickets                               # List tickets
+hubspot ticket <id>                           # Get ticket
+hubspot ticket-search "query"                 # Search
 ```
 
 ### Notes & Tasks
 ```bash
-hs notes <objectType> <id>               # List notes
-hs note-create <objectType> <id> "body"  # Create note
-hs tasks                                 # List tasks
-hs task <id>                             # Get task
-hs task-create --subject "Task" --due "2024-12-31"
+hubspot notes <objectType> <id>               # List notes
+hubspot note-create <objectType> <id> "body"  # Create note
+hubspot tasks                                 # List tasks
+hubspot task <id>                             # Get task
+hubspot task-create --subject "Task" --due "2024-12-31"
 ```
 
 ### Associations
 ```bash
-hs associations <from> <id> <to>         # List associations
-hs associate <from> <id1> <to> <id2>     # Create association
+hubspot associations <from> <id> <to>         # List associations
+hubspot associate <from> <id1> <to> <id2>     # Create association
 ```
 
 ## Output Formats

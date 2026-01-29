@@ -2,12 +2,18 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import JSON5 from 'json5';
+import type { AuthMethod, OAuthCredentials, OAuthAppConfig } from './types.js';
+import { TOKEN_REFRESH_BUFFER_MS } from './oauth/constants.js';
 
 export interface HsConfig {
   accessToken?: string;
   portalId?: string;
   defaultFormat?: 'plain' | 'json' | 'markdown';
   defaultLimit?: number;
+  // OAuth fields
+  authMethod?: AuthMethod;
+  oauth?: OAuthCredentials;
+  oauthApp?: OAuthAppConfig;
 }
 
 const DEFAULT_CONFIG: HsConfig = {
@@ -132,4 +138,80 @@ export function getPortalId(): string | undefined {
 export function getDefaultLimit(): number {
   const config = loadConfig(() => {});
   return config.defaultLimit ?? 20;
+}
+
+// OAuth Configuration Functions
+
+export function getAuthMethod(): AuthMethod {
+  const config = loadConfig(() => {});
+  return config.authMethod ?? 'token';
+}
+
+export function setAuthMethod(method: AuthMethod): void {
+  saveConfig({ authMethod: method });
+}
+
+export function getOAuthCredentials(): OAuthCredentials | undefined {
+  const config = loadConfig(() => {});
+  return config.oauth;
+}
+
+export function setOAuthCredentials(credentials: OAuthCredentials): void {
+  saveConfig({ oauth: credentials, authMethod: 'oauth' });
+}
+
+export function clearOAuthCredentials(): void {
+  const path = getGlobalConfigPath();
+  if (!existsSync(path)) {
+    return;
+  }
+
+  try {
+    const raw = readFileSync(path, 'utf8');
+    const parsed = JSON5.parse(raw);
+    if (isPlainObject(parsed)) {
+      delete parsed.oauth;
+      delete parsed.authMethod;
+      delete parsed.oauthApp;
+      const content = JSON5.stringify(parsed, null, 2);
+      writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
+      // Invalidate cache
+      cachedConfig = null;
+    }
+  } catch {
+    // Ignore errors - config will be recreated on next save
+  }
+}
+
+export function getOAuthAppConfig(): OAuthAppConfig | undefined {
+  const config = loadConfig(() => {});
+  return config.oauthApp;
+}
+
+export function setOAuthAppConfig(appConfig: OAuthAppConfig): void {
+  saveConfig({ oauthApp: appConfig });
+}
+
+export function isTokenExpired(): boolean {
+  const credentials = getOAuthCredentials();
+  if (!credentials) {
+    return true;
+  }
+  // Consider expired if within the refresh buffer
+  return Date.now() >= (credentials.expiresAt - TOKEN_REFRESH_BUFFER_MS);
+}
+
+export function getTimeUntilExpiry(): number {
+  const credentials = getOAuthCredentials();
+  if (!credentials) {
+    return 0;
+  }
+  return Math.max(0, credentials.expiresAt - Date.now());
+}
+
+export function isOAuthConfigured(): boolean {
+  const config = loadConfig(() => {});
+  return config.authMethod === 'oauth' &&
+    config.oauth?.accessToken !== undefined &&
+    config.oauth?.refreshToken !== undefined;
 }

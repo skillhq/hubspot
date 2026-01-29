@@ -1,4 +1,4 @@
-export { authCommand } from './auth.js';
+export { authCommand, authLoginCommand, authLogoutCommand, authStatusCommand } from './auth.js';
 export { checkCommand } from './check.js';
 export { whoamiCommand } from './whoami.js';
 export { contactsCommand, contactCommand, contactSearchCommand, contactCreateCommand, contactUpdateCommand } from './contacts.js';

@@ -1,7 +1,18 @@
 import { Client } from '@hubspot/api-client';
 import { AssociationSpecAssociationCategoryEnum } from '@hubspot/api-client/lib/codegen/crm/associations/v4/models/AssociationSpec.js';
 import { FilterOperatorEnum } from '@hubspot/api-client/lib/codegen/crm/deals/models/Filter.js';
-import { getAccessToken, isConfigured, setPortalId } from './config.js';
+import {
+  getAccessToken,
+  isConfigured,
+  setPortalId,
+  getAuthMethod,
+  getOAuthCredentials,
+  setOAuthCredentials,
+  isTokenExpired,
+  getOAuthAppConfig,
+  isOAuthConfigured,
+} from './config.js';
+import { refreshAccessToken } from './oauth/flow.js';
 import type {
   Contact,
   Company,
@@ -19,11 +30,37 @@ import type {
 
 let clientInstance: Client | null = null;
 
+/**
+ * Clears the cached client instance.
+ * Call this when credentials change (e.g., after token refresh or logout).
+ */
+export function resetClient(): void {
+  clientInstance = null;
+}
+
+/**
+ * Gets the HubSpot API client synchronously.
+ * For OAuth, use getClientAsync() instead to handle token refresh.
+ * @deprecated Use getClientAsync() for OAuth support with automatic token refresh.
+ */
 export function getClient(): Client {
   if (clientInstance) {
     return clientInstance;
   }
 
+  const authMethod = getAuthMethod();
+
+  if (authMethod === 'oauth') {
+    const credentials = getOAuthCredentials();
+    if (!credentials) {
+      throw new Error('OAuth not configured. Run "hs auth login" to authenticate.');
+    }
+    // Note: This won't refresh tokens - use getClientAsync() for that
+    clientInstance = new Client({ accessToken: credentials.accessToken });
+    return clientInstance;
+  }
+
+  // Private App Token flow
   if (!isConfigured()) {
     throw new Error('Not configured. Run "hs auth" first to set up your access token.');
   }
@@ -35,6 +72,51 @@ export function getClient(): Client {
 
   clientInstance = new Client({ accessToken });
   return clientInstance;
+}
+
+/**
+ * Gets the HubSpot API client with automatic token refresh for OAuth.
+ * This is the preferred method when using OAuth authentication.
+ */
+export async function getClientAsync(): Promise<Client> {
+  const authMethod = getAuthMethod();
+
+  if (authMethod === 'oauth') {
+    if (!isOAuthConfigured()) {
+      throw new Error('OAuth not configured. Run "hs auth login" to authenticate.');
+    }
+
+    // Check if token needs refresh
+    if (isTokenExpired()) {
+      const credentials = getOAuthCredentials();
+      const appConfig = getOAuthAppConfig();
+
+      if (!credentials || !appConfig) {
+        throw new Error('OAuth configuration incomplete. Run "hs auth login" to re-authenticate.');
+      }
+
+      try {
+        const newCredentials = await refreshAccessToken(credentials.refreshToken, appConfig);
+        setOAuthCredentials(newCredentials);
+        resetClient(); // Clear cached client to use new token
+      } catch (error) {
+        throw new Error(`Failed to refresh token: ${error instanceof Error ? error.message : String(error)}. Run "hs auth login" to re-authenticate.`);
+      }
+    }
+
+    const credentials = getOAuthCredentials();
+    if (!credentials) {
+      throw new Error('OAuth credentials not found after refresh.');
+    }
+
+    if (!clientInstance) {
+      clientInstance = new Client({ accessToken: credentials.accessToken });
+    }
+    return clientInstance;
+  }
+
+  // Private App Token flow - no async operations needed
+  return getClient();
 }
 
 // Portal Info
